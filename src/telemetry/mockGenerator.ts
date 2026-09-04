@@ -6,6 +6,19 @@ const HISTORY_LEN = 180; // ~36s at 200ms
 const SPECTROGRAM_COLS = 150;
 const GPS_ORIGIN = { latitude: 12.9716, longitude: 77.5946 };
 
+function prefillHistory(): TelemetryHistory {
+  const motion: TelemetryHistory['motion'] = [];
+  const breathing: TelemetryHistory['breathing'] = [];
+  const ai: TelemetryHistory['ai'] = [];
+  for (let i = 0; i < HISTORY_LEN; i++) {
+    const t = Date.now() - (HISTORY_LEN - i) * 200;
+    motion.push({ t, value: null, variance: 0, threshold: 5.22 });
+    breathing.push({ t, value: null, rate_bpm: 0 });
+    ai.push({ t, value: null, detection: null });
+  }
+  return { motion, breathing, ai, spectrogram: [] };
+}
+
 // Meters per degree approx (Bangalore latitude)
 const M_PER_DEG_LAT = 111320;
 const M_PER_DEG_LNG = 111320 * Math.cos((GPS_ORIGIN.latitude * Math.PI) / 180);
@@ -222,12 +235,7 @@ export function generateTelemetry(): Telemetry {
 
 // ── History tracking ────────────────────────────────────────
 export function createHistoryTracker() {
-  const history: TelemetryHistory = {
-    motion: [],
-    breathing: [],
-    ai: [],
-    spectrogram: [],
-  };
+  const history: TelemetryHistory = prefillHistory();
 
   function update(t: Telemetry): TelemetryHistory {
     const now = Date.now();
@@ -245,13 +253,13 @@ export function createHistoryTracker() {
     });
     history.ai.push({
       t: now,
-      value: t.ml.score ?? 0,
+      value: t.ml.score ?? null,
       detection: t.ml.detection,
     });
 
     history.spectrogram.push(t.csi_spectrogram_row);
 
-    // Trim
+    // Trim — always maintain exactly HISTORY_LEN points for charts
     if (history.motion.length > HISTORY_LEN) history.motion.shift();
     if (history.breathing.length > HISTORY_LEN) history.breathing.shift();
     if (history.ai.length > HISTORY_LEN) history.ai.shift();

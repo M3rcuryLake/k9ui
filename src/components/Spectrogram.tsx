@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useTelemetry } from '@/telemetry/TelemetryProvider';
 import { SPECTRUM_BINS, SPECTROGRAM_COLS } from '@/telemetry/mockGenerator';
+import { AwaitingSignal } from '@/components/AwaitingSignal';
 
 // Colormap: black → dark blue → blue → cyan → green → yellow → orange → red → white
 function heatColor(v: number): [number, number, number] {
@@ -31,8 +32,10 @@ function heatColor(v: number): [number, number, number] {
 
 export function Spectrogram() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const { telemetry, history } = useTelemetry();
+  const { telemetry, history, connectionStatus } = useTelemetry();
   const spectrogram = history.spectrogram;
+
+  const isAwaiting = connectionStatus === 'awaiting' && !telemetry;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -103,6 +106,14 @@ export function Spectrogram() {
   const displayWindows = spectrogram.length;
   const bandFirst = telemetry?.band[0] ?? 11;
   const bandLast = telemetry?.band[telemetry.band.length - 1] ?? 52;
+
+  if (isAwaiting) {
+    return (
+      <div className="relative h-full w-full overflow-hidden rounded-xl border border-ink-500/40 bg-ink-900">
+        <AwaitingSignal />
+      </div>
+    );
+  }
 
   return (
     <div className="relative h-full w-full overflow-hidden rounded-xl border border-ink-500/40 bg-ink-900">

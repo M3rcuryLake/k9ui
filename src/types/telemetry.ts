@@ -1,3 +1,5 @@
+export type ConnectionStatus = 'awaiting' | 'live' | 'offline';
+
 export type MvsState = 'idle' | 'detecting' | 'confirmed';
 
 export interface MvsData {
@@ -49,8 +51,8 @@ export interface Telemetry {
 }
 
 export interface TelemetryHistory {
-  motion: { t: number; value: number; variance: number; threshold: number }[];
-  breathing: { t: number; value: number; rate_bpm: number }[];
-  ai: { t: number; value: number; detection: string | null }[];
+  motion: { t: number; value: number | null; variance: number; threshold: number }[];
+  breathing: { t: number; value: number | null; rate_bpm: number }[];
+  ai: { t: number; value: number | null; detection: string | null }[];
   spectrogram: number[][];
 }

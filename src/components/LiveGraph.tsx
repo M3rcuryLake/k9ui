@@ -1,8 +1,9 @@
 import { useEffect, useRef } from 'react';
 import { useTelemetry } from '@/telemetry/TelemetryProvider';
+import { AwaitingSignal } from '@/components/AwaitingSignal';
 
 interface GraphProps {
-  data: { t: number; value: number }[];
+  data: { t: number; value: number | null }[];
   threshold?: number;
   color: string;
   glowColor: string;
@@ -14,6 +15,7 @@ interface GraphProps {
   eventMarkers?: { t: number; label: string }[];
   max?: number;
   alarm?: boolean;
+  awaiting?: boolean;
 }
 
 function LiveGraph({
@@ -29,6 +31,7 @@ function LiveGraph({
   eventMarkers,
   max = 100,
   alarm = false,
+  awaiting = false,
 }: GraphProps) {
   const activeColor = alarm ? '#fb7185' : color;
   const activeGlow = alarm ? 'rgba(248, 113, 113, 0.52)' : glowColor;
@@ -79,62 +82,90 @@ function LiveGraph({
       ctx.setLineDash([]);
     }
 
-    // Build path
+    // Build path — null values create gaps in the line
     const points = data.map((d, i) => ({
       x: Math.max(padL, Math.min(padL + w, padL + (i / (n - 1)) * w)),
-      y: Math.max(
-        padT,
-        Math.min(padT + h, padT + h * (1 - Math.min(Math.max(d.value, 0), max) / max))
-      ),
+      y: d.value === null
+        ? null
+        : Math.max(
+            padT,
+            Math.min(padT + h, padT + h * (1 - Math.min(Math.max(d.value, 0), max) / max))
+          ),
     }));
+
+    // Split into contiguous segments (null values create gaps)
+    const segments: { x: number; y: number }[][] = [];
+    let currentSegment: { x: number; y: number }[] = [];
+    for (const p of points) {
+      if (p.y === null) {
+        if (currentSegment.length > 0) {
+          segments.push(currentSegment);
+          currentSegment = [];
+        }
+      } else {
+        currentSegment.push({ x: p.x, y: p.y });
+      }
+    }
+    if (currentSegment.length > 0) segments.push(currentSegment);
 
     // Gradient fill
     const grad = ctx.createLinearGradient(0, padT, 0, padT + h);
     grad.addColorStop(0, activeFill);
     grad.addColorStop(1, 'rgba(0,0,0,0)');
 
-    ctx.beginPath();
-    ctx.moveTo(points[0].x, padT + h);
-    for (const p of points) {
-      ctx.lineTo(p.x, p.y);
+    for (const seg of segments) {
+      if (seg.length < 2) continue;
+      ctx.beginPath();
+      ctx.moveTo(seg[0].x, padT + h);
+      for (const p of seg) {
+        ctx.lineTo(p.x, p.y);
+      }
+      ctx.lineTo(seg[seg.length - 1].x, padT + h);
+      ctx.closePath();
+      ctx.fillStyle = grad;
+      ctx.fill();
     }
-    ctx.lineTo(points[points.length - 1].x, padT + h);
-    ctx.closePath();
-    ctx.fillStyle = grad;
-    ctx.fill();
 
     // Glow stroke (wide, low opacity)
-    ctx.beginPath();
-    ctx.moveTo(points[0].x, points[0].y);
-    for (let i = 1; i < points.length; i++) {
-      ctx.lineTo(points[i].x, points[i].y);
+    for (const seg of segments) {
+      if (seg.length < 2) continue;
+      ctx.beginPath();
+      ctx.moveTo(seg[0].x, seg[0].y);
+      for (let i = 1; i < seg.length; i++) {
+        ctx.lineTo(seg[i].x, seg[i].y);
+      }
+      ctx.strokeStyle = activeGlow;
+      ctx.lineWidth = 4;
+      ctx.shadowBlur = 8;
+      ctx.shadowColor = activeGlow;
+      ctx.stroke();
     }
-    ctx.strokeStyle = activeGlow;
-    ctx.lineWidth = 4;
-    ctx.shadowBlur = 8;
-    ctx.shadowColor = activeGlow;
-    ctx.stroke();
 
     // Main stroke
     ctx.shadowBlur = 0;
-    ctx.beginPath();
-    ctx.moveTo(points[0].x, points[0].y);
-    for (let i = 1; i < points.length; i++) {
-      ctx.lineTo(points[i].x, points[i].y);
+    for (const seg of segments) {
+      if (seg.length < 2) continue;
+      ctx.beginPath();
+      ctx.moveTo(seg[0].x, seg[0].y);
+      for (let i = 1; i < seg.length; i++) {
+        ctx.lineTo(seg[i].x, seg[i].y);
+      }
+      ctx.strokeStyle = activeColor;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
     }
-    ctx.strokeStyle = activeColor;
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
 
-    // Latest point dot
-    const last = points[points.length - 1];
-    ctx.beginPath();
-    ctx.arc(last.x, last.y, 3, 0, Math.PI * 2);
-    ctx.fillStyle = activeColor;
-    ctx.shadowBlur = 10;
-    ctx.shadowColor = activeGlow;
-    ctx.fill();
-    ctx.shadowBlur = 0;
+    // Latest point dot — only if last point is real
+    const lastPoint = points[points.length - 1];
+    if (lastPoint && lastPoint.y !== null) {
+      ctx.beginPath();
+      ctx.arc(lastPoint.x, lastPoint.y, 3, 0, Math.PI * 2);
+      ctx.fillStyle = activeColor;
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = activeGlow;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    }
 
     // Event markers
     if (eventMarkers && eventMarkers.length > 0) {
@@ -162,6 +193,21 @@ function LiveGraph({
     typeof currentValue === 'number'
       ? currentValue.toFixed(1)
       : currentValue ?? '—';
+
+  if (awaiting) {
+    return (
+      <div className="group relative overflow-hidden rounded-xl border border-ink-500/30 bg-ink-800/60 p-4">
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] font-medium uppercase tracking-wider text-slate-400">
+            {label}
+          </span>
+        </div>
+        <div className="mt-4 h-24">
+          <AwaitingSignal />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -213,11 +259,13 @@ function LiveGraph({
 }
 
 export function MotionGraph() {
-  const { history, telemetry } = useTelemetry();
+  const { history, telemetry, connectionStatus } = useTelemetry();
   const data = history.motion.map((d) => ({ t: d.t, value: d.value }));
+  const awaiting = connectionStatus === 'awaiting' && !telemetry;
   return (
     <LiveGraph
       data={data}
+      awaiting={awaiting}
       threshold={50}
       color="#22d3ee"
       glowColor="rgba(34, 211, 238, 0.4)"
@@ -235,11 +283,13 @@ export function MotionGraph() {
 }
 
 export function BreathingGraph() {
-  const { history, telemetry } = useTelemetry();
+  const { history, telemetry, connectionStatus } = useTelemetry();
   const data = history.breathing.map((d) => ({ t: d.t, value: d.value }));
+  const awaiting = connectionStatus === 'awaiting' && !telemetry;
   return (
     <LiveGraph
       data={data}
+      awaiting={awaiting}
       threshold={50}
       color="#fbbf24"
       glowColor="rgba(251, 191, 36, 0.4)"
@@ -257,10 +307,11 @@ export function BreathingGraph() {
 }
 
 export function AiGraph() {
-  const { history, telemetry } = useTelemetry();
+  const { history, telemetry, connectionStatus } = useTelemetry();
   const data = history.ai.map((d) => ({ t: d.t, value: d.value }));
+  const awaiting = connectionStatus === 'awaiting' && !telemetry;
   const events = history.ai
-    .filter((d) => d.detection !== null)
+    .filter((d) => d.detection !== null && d.value !== null)
     .map((d) => ({ t: d.t, label: d.detection! }));
   return (
     <LiveGraph
@@ -277,6 +328,7 @@ export function AiGraph() {
         value: telemetry?.ml.detection ?? 'scanning…',
       }}
       eventMarkers={events}
+      awaiting={awaiting}
     />
   );
 }

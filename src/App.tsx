@@ -3,7 +3,42 @@ import { Spectrogram } from '@/components/Spectrogram';
 import { RoverMap } from '@/components/RoverMap';
 import { MotionGraph, BreathingGraph, AiGraph } from '@/components/LiveGraph';
 import { TelemetryPanel } from '@/components/TelemetryPanel';
-import { Activity, Radio, Cpu } from 'lucide-react';
+import { Activity, Radio, Cpu, Wifi, WifiOff } from 'lucide-react';
+
+function ConnectionBadge() {
+  const { connectionStatus } = useTelemetry();
+
+  if (connectionStatus === 'live') {
+    return (
+      <div className="flex items-center gap-1.5 rounded-full border border-cyan-400/20 bg-cyan-500/5 px-2.5 py-1">
+        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-400 shadow-glow" />
+        <span className="font-mono text-[10px] font-medium tracking-wider text-cyan-300">
+          LIVE
+        </span>
+      </div>
+    );
+  }
+
+  if (connectionStatus === 'offline') {
+    return (
+      <div className="flex items-center gap-1.5 rounded-full border border-red-400/30 bg-red-500/10 px-2.5 py-1">
+        <WifiOff className="h-3 w-3 text-red-400" />
+        <span className="font-mono text-[10px] font-medium tracking-wider text-red-300">
+          OFFLINE
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-1.5 rounded-full border border-slate-600/30 bg-slate-700/20 px-2.5 py-1">
+      <Wifi className="h-3 w-3 text-slate-400" />
+      <span className="font-mono text-[10px] font-medium tracking-wider text-slate-400">
+        CONNECTING
+      </span>
+    </div>
+  );
+}
 
 function HeaderBar() {
   const { telemetry } = useTelemetry();
@@ -36,6 +71,7 @@ function HeaderBar() {
       </div>
 
       <div className="flex items-center gap-4">
+        <ConnectionBadge />
         <div className="flex items-center gap-2">
           <span
             className="h-1.5 w-1.5 rounded-full"
@@ -65,6 +101,9 @@ function HeaderBar() {
 }
 
 function Dashboard() {
+  const { connectionStatus } = useTelemetry();
+  const isOffline = connectionStatus === 'offline';
+
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-ink-900">
       <HeaderBar />
@@ -82,13 +121,22 @@ function Dashboard() {
         </div>
 
         {/* Right sidebar — graphs + telemetry */}
-        <div className="flex w-96 shrink-0 flex-col gap-3 overflow-y-auto pr-1">
+        <div
+          className={`flex w-96 shrink-0 flex-col gap-3 overflow-y-auto pr-1 transition-[filter,opacity] duration-500 ${
+            isOffline ? 'pointer-events-none opacity-60 saturate-50' : ''
+          }`}
+        >
           <MotionGraph />
           <BreathingGraph />
           <AiGraph />
           <TelemetryPanel />
         </div>
       </div>
+
+      {/* Offline desaturation overlay for the main column */}
+      {isOffline && (
+        <div className="pointer-events-none absolute inset-0 z-[600] bg-ink-900/20" />
+      )}
     </div>
   );
 }

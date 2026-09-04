@@ -59,7 +59,7 @@ export function RoverMap() {
   const [stale, setStale] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
 
-  const { telemetry } = useTelemetry();
+  const { telemetry, connectionStatus } = useTelemetry();
 
   // Init map
   useEffect(() => {
@@ -170,8 +170,9 @@ export function RoverMap() {
     const breathCircle = breathCircleRef.current;
     const trail = trailRef.current;
 
-    // Stale state
-    setStale(telemetry.stale);
+    // Stale state — true when telemetry says stale OR connection is offline
+    const isOffline = connectionStatus === 'offline';
+    setStale(telemetry.stale || isOffline);
 
     // Update rover icon (rotation + stale)
     rover.setIcon(createRoverIcon(telemetry.pose.theta_deg, telemetry.stale));
@@ -214,7 +215,7 @@ export function RoverMap() {
     } else if (breathCircle) {
       breathCircle.setStyle({ fillOpacity: 0, opacity: 0 });
     }
-  }, [telemetry, userLocation]);
+  }, [telemetry, userLocation, connectionStatus]);
 
   // Radar sweep — a marker-based div that stays glued to the rover
   useEffect(() => {

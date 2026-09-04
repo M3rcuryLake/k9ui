@@ -1,4 +1,5 @@
 import { useTelemetry } from '@/telemetry/TelemetryProvider';
+import { AwaitingSignal } from '@/components/AwaitingSignal';
 
 function formatUptime(seconds: number): string {
   const h = Math.floor(seconds / 3600);
@@ -8,7 +9,6 @@ function formatUptime(seconds: number): string {
 }
 
 function rssiQuality(rssi: number): { label: string; color: string; pct: number } {
-  // -30 great, -90 unusable
   const pct = Math.max(0, Math.min(100, ((rssi + 90) / 60) * 100));
   if (rssi > -55) return { label: 'Excellent', color: '#22d3ee', pct };
   if (rssi > -65) return { label: 'Good', color: '#4ade80', pct };
@@ -23,7 +23,18 @@ function tempState(c: number): { color: string; warning: boolean } {
 }
 
 export function TelemetryPanel() {
-  const { telemetry, uptime } = useTelemetry();
+  const { telemetry, uptime, connectionStatus } = useTelemetry();
+
+  const isAwaiting = connectionStatus === 'awaiting' && !telemetry;
+
+  if (isAwaiting) {
+    return (
+      <div className="rounded-xl border border-ink-500/30 bg-ink-800/60 p-4">
+        <AwaitingSignal />
+      </div>
+    );
+  }
+
   if (!telemetry) return null;
 
   const rssiQ = rssiQuality(telemetry.rssi);
