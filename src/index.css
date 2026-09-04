@@ -36,6 +36,15 @@ body {
   font-family: var(--font-mono);
 }
 
+/* Offline grid fallback — visible when tiles can't load */
+.offline-grid .leaflet-tile {
+  background-color: #0a0e16;
+  background-image:
+    linear-gradient(rgba(34, 211, 238, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(34, 211, 238, 0.06) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
 .leaflet-tile-pane {
   filter: invert(1) hue-rotate(180deg) brightness(0.85) contrast(1.1)
     saturate(0.6);

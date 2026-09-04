@@ -11,6 +11,15 @@ const M_PER_DEG_LNG = 111320 * Math.cos((GPS_ORIGIN.latitude * Math.PI) / 180);
 // Zoom level for ~50m view
 const MAP_ZOOM = 18;
 
+// Fallback grid layer for offline mode — draws a coordinate grid
+// on a dark background when map tiles can't be fetched.
+function createGridLayer(): L.GridLayer {
+  return L.gridLayer({
+    tileSize: 256,
+    className: 'offline-grid',
+  });
+}
+
 // Rover marker icon (SVG directional puck)
 function createRoverIcon(theta: number, stale: boolean): L.DivIcon {
   const color = stale ? '#64748b' : '#22d3ee';
@@ -73,10 +82,29 @@ export function RoverMap() {
       preferCanvas: true,
     });
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 22,
       attribution: '© OpenStreetMap contributors',
     }).addTo(map);
+
+    // Track whether tiles are actually loading — if they all error
+    // (offline mode), swap to a canvas grid overlay so the map still
+    // shows a usable background instead of blank gray.
+    let tilesLoaded = 0;
+    let tilesErrored = 0;
+    let fallbackGrid: L.GridLayer | null = null;
+
+    tileLayer.on('tileerror', () => {
+      tilesErrored++;
+      if (tilesLoaded === 0 && tilesErrored >= 4 && !fallbackGrid) {
+        fallbackGrid = createGridLayer();
+        fallbackGrid.addTo(map);
+        fallbackGrid.bringToBack();
+      }
+    });
+    tileLayer.on('tileload', () => {
+      tilesLoaded++;
+    });
 
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -145,6 +173,7 @@ export function RoverMap() {
     return () => {
       map.remove();
       mapRef.current = null;
+      fallbackGrid = null;
     };
   }, []);
 
