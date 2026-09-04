@@ -105,7 +105,7 @@ export function Spectrogram() {
 
   const displayWindows = spectrogram.length;
   const bandFirst = telemetry?.band[0] ?? 11;
-  const bandLast = telemetry?.band[telemetry.band.length - 1] ?? 52;
+  const bandLast = telemetry ? telemetry.band[telemetry.band.length - 1] : 52;
 
   if (isAwaiting) {
     return (
