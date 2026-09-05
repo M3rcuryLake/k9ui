@@ -11,7 +11,7 @@ export function AwaitingSignal({
 }: AwaitingSignalProps) {
   return (
     <div
-      className={`flex h-full w-full flex-col items-center justify-center gap-3 ${className}`}
+      className={`flex h-full w-full min-w-max flex-col items-center justify-center gap-4 whitespace-nowrap p-6 text-center ${className}`}
     >
       <div className="relative flex h-12 w-12 items-center justify-center">
         <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-cyan-400/20" />
