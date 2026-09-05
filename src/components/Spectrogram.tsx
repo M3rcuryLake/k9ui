@@ -1,34 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useTelemetry } from '@/telemetry/TelemetryProvider';
-import { SPECTRUM_BINS, SPECTROGRAM_COLS } from '@/telemetry/mockGenerator';
+import { SPECTRUM_BINS } from '@/telemetry/mockGenerator';
 import { AwaitingSignal } from '@/components/AwaitingSignal';
-
-// Colormap: black → dark blue → blue → cyan → green → yellow → orange → red → white
-function heatColor(v: number): [number, number, number] {
-  const t = Math.max(0, Math.min(1, v));
-  if (t < 0.08) {
-    const f = t / 0.08;
-    return [Math.round(f * 6), Math.round(f * 4), Math.round(f * 20)];
-  } else if (t < 0.2) {
-    const f = (t - 0.08) / 0.12;
-    return [Math.round(6 + f * 4), Math.round(4 + f * 30), Math.round(20 + f * 100)];
-  } else if (t < 0.38) {
-    const f = (t - 0.2) / 0.18;
-    return [Math.round(10 - f * 8), Math.round(34 + f * 140), Math.round(120 + f * 80)];
-  } else if (t < 0.55) {
-    const f = (t - 0.38) / 0.17;
-    return [Math.round(2 + f * 40), Math.round(174 + f * 60), Math.round(200 - f * 140)];
-  } else if (t < 0.72) {
-    const f = (t - 0.55) / 0.17;
-    return [Math.round(42 + f * 180), Math.round(234 - f * 80), Math.round(60 - f * 40)];
-  } else if (t < 0.88) {
-    const f = (t - 0.72) / 0.16;
-    return [Math.round(222 + f * 33), Math.round(154 - f * 100), Math.round(20 + f * 10)];
-  } else {
-    const f = (t - 0.88) / 0.12;
-    return [255, Math.round(54 + f * 180), Math.round(30 + f * 200)];
-  }
-}
 
 // Y-axis labels for 12 bins across 0–10 Hz
 const FREQ_LABELS = [10, 8, 6, 4, 2, 0];
@@ -70,8 +43,9 @@ export function Spectrogram() {
       const row = spectrogram[c];
       const xPos = c * colWidth;
       for (let r = 0; r < SPECTRUM_BINS; r++) {
-        const v = row[r] || 0;
-        const [cr, cg, cb] = heatColor(v);
+        const pixel = row[r];
+        if (!pixel) continue;
+        const [cr, cg, cb] = pixel;
         ctx.fillStyle = `rgb(${cr},${cg},${cb})`;
         const yPos = rect.height - (r + 1) * rowHeight;
         ctx.fillRect(xPos, yPos, colWidth + 1, rowHeight + 1);

@@ -1,4 +1,4 @@
-import type { Telemetry, TelemetryHistory } from '@/types/telemetry';
+import type { RgbPixel, Telemetry, TelemetryHistory } from '@/types/telemetry';
 
 // ── Constants ──────────────────────────────────────────────
 const SPECTRUM_BINS = 12;
@@ -90,8 +90,8 @@ function advancePhase(): void {
 }
 
 // ── Spectrogram row generator ───────────────────────────────
-function genSpectrumRow(): number[] {
-  const row: number[] = [];
+function genSpectrumRow(): RgbPixel[] {
+  const row: RgbPixel[] = [];
   const hasEvent = phase === 'detected' || phase === 'breathing';
   const eventBand = 4 + Math.floor(Math.random() * 4);
   const eventWidth = phase === 'breathing' ? 1 : 3;
@@ -110,7 +110,12 @@ function genSpectrumRow(): number[] {
     // occasional random bright pixel
     if (Math.random() < 0.01) v += 0.3;
 
-    row.push(clamp(v, 0, 1));
+    const intensity = clamp(v, 0, 1);
+    row.push([
+      Math.round(intensity * 255),
+      Math.round(intensity * 220),
+      Math.round(intensity * 180),
+    ]);
   }
   return row;
 }

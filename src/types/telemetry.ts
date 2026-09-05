@@ -33,6 +33,8 @@ export interface GpsOrigin {
   longitude: number;
 }
 
+export type RgbPixel = [number, number, number];
+
 export interface Telemetry {
   seq: number;
   timestamp_us: number;
@@ -46,7 +48,7 @@ export interface Telemetry {
   breath: BreathData;
   pose: PoseData;
   gps_origin?: GpsOrigin;
-  csi_spectrogram_row: number[];
+  csi_spectrogram_row: RgbPixel[];
   stale: boolean;
 }
 
@@ -54,5 +56,5 @@ export interface TelemetryHistory {
   motion: { t: number; value: number | null; variance: number; threshold: number }[];
   breathing: { t: number; value: number | null; rate_bpm: number }[];
   ai: { t: number; value: number | null; detection: string | null }[];
-  spectrogram: number[][];
+  spectrogram: RgbPixel[][];
 }
