@@ -221,8 +221,12 @@ export function RoverMap() {
   // Update from telemetry
   useEffect(() => {
     if (!telemetry || !mapRef.current || !roverMarkerRef.current) return;
+    if (telemetry.pose == null) return;
 
-    const pos = poseToLatLng(telemetry.pose, origin);
+    const pos = poseToLatLng(
+      { x: telemetry.pose.x ?? 0, y: telemetry.pose.y ?? 0 },
+      origin
+    );
     const map = mapRef.current;
     const rover = roverMarkerRef.current;
     const moveCircle = moveCircleRef.current;
@@ -232,7 +236,7 @@ export function RoverMap() {
     const isOffline = connectionStatus === 'offline';
     setStale(telemetry.stale || isOffline);
 
-    rover.setIcon(createRoverIcon(telemetry.pose.theta_deg, telemetry.stale));
+    rover.setIcon(createRoverIcon(telemetry.pose.theta_deg ?? 0, telemetry.stale));
     rover.setLatLng([pos.lat, pos.lng]);
     sweepMarkerRef.current?.setLatLng([pos.lat, pos.lng]);
 
@@ -339,7 +343,7 @@ export function RoverMap() {
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-400" />
             <span className="font-mono text-[10px] text-cyan-300">
               {telemetry
-                ? `${telemetry.pose.x.toFixed(1)}, ${telemetry.pose.y.toFixed(1)}m · ${telemetry.pose.theta_deg.toFixed(0)}°`
+                ? `${telemetry.pose.x?.toFixed(1) ?? '—'}, ${telemetry.pose.y?.toFixed(1) ?? '—'}m · ${telemetry.pose.theta_deg?.toFixed(0) ?? '—'}°`
                 : 'awaiting pose…'}
             </span>
           </div>

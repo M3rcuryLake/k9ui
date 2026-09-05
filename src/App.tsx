@@ -49,7 +49,9 @@ function HeaderBar() {
       ? '#22d3ee'
       : mvsState === 'detecting'
         ? '#fbbf24'
-        : '#64748b';
+        : mvsState === 'motion'
+          ? '#fbbf24'
+          : '#64748b';
 
   return (
     <header className="flex items-center justify-between border-b border-ink-500/30 bg-ink-900/80 px-6 py-3 backdrop-blur-sm">
@@ -84,7 +86,7 @@ function HeaderBar() {
         <div className="flex items-center gap-2">
           <Activity className="h-3 w-3 text-cyan-400" />
           <span className="font-mono text-[10px] uppercase tracking-wider text-slate-400">
-            Breath: {telemetry?.breath.rate_bpm.toFixed(1) ?? '—'} BPM
+            Breath: {telemetry?.breath.rate_bpm?.toFixed(1) ?? '—'} BPM
           </span>
         </div>
         <div className="flex items-center gap-2">

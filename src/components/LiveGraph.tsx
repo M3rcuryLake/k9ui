@@ -245,7 +245,7 @@ export function MotionGraph() {
       alarm={Boolean(telemetry && telemetry.mvs.confidence > 50)}
       secondaryValue={{
         label: 'Var',
-        value: `${telemetry?.mvs.variance.toFixed(2) ?? '—'} / ${telemetry?.mvs.threshold.toFixed(2) ?? '—'}`,
+        value: `${telemetry?.mvs.variance?.toFixed(2) ?? '—'} / ${telemetry?.mvs.threshold?.toFixed(2) ?? '—'}`,
       }}
     />
   );
@@ -268,7 +268,7 @@ export function BreathingGraph() {
       alarm={Boolean(telemetry && telemetry.breath.confidence > 50)}
       secondaryValue={{
         label: 'Rate',
-        value: `${telemetry?.breath.rate_bpm.toFixed(1) ?? '—'} BPM · SNR ${telemetry?.breath.snr.toFixed(1) ?? '—'}`,
+        value: `${telemetry?.breath.rate_bpm?.toFixed(1) ?? '—'} BPM · SNR ${telemetry?.breath.snr?.toFixed(1) ?? '—'}`,
       }}
     />
   );

@@ -38,7 +38,8 @@ export function TelemetryPanel() {
   if (!telemetry) return null;
 
   const rssiQ = rssiQuality(telemetry.rssi);
-  const tempS = tempState(telemetry.temperature_c);
+  const tempC = telemetry.temperature_c ?? 0;
+  const tempS = tempState(tempC);
   const seqGap = telemetry.dropped > 0;
 
   return (
@@ -113,14 +114,14 @@ export function TelemetryPanel() {
               className={`font-mono text-lg font-semibold tabular-nums ${tempS.warning ? 'animate-pulse' : ''}`}
               style={{ color: tempS.color }}
             >
-              {telemetry.temperature_c.toFixed(1)}
+              {tempC.toFixed(1)}
             </span>
             <span className="font-mono text-[10px] text-slate-500">°C</span>
           </div>
         </div>
         {tempS.warning && (
           <p className="mt-2 font-mono text-[9px] text-red-400">
-            {telemetry.temperature_c > 50 ? 'CRITICAL THRESHOLD' : 'ELEVATED'}
+            {tempC > 50 ? 'CRITICAL THRESHOLD' : 'ELEVATED'}
           </p>
         )}
       </div>
