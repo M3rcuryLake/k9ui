@@ -79,7 +79,7 @@ export function Spectrogram() {
   return (
     <div className="relative h-full w-full overflow-hidden rounded-xl border border-ink-500/40 bg-ink-900">
       {/* Header */}
-      <div className="absolute left-0 right-0 top-0 z-10 flex items-start justify-between px-4 py-3">
+      <div className="absolute left-0 right-0 top-0 z-10 flex items-start justify-between px-6 py-5">
         <div>
           <h2 className="text-sm font-semibold tracking-wide text-slate-200">
             Live CSI Spectrogram
@@ -99,7 +99,7 @@ export function Spectrogram() {
       </div>
 
       {/* Y-axis labels */}
-      <div className="absolute left-1 top-11 z-10 flex h-[calc(100%-3.5rem)] flex-col justify-between py-1">
+      <div className="absolute left-3 top-16 z-10 flex h-[calc(100%-6rem)] flex-col justify-between py-2">
         {FREQ_LABELS.map((freq) => (
           <span key={freq} className="font-mono text-[9px] text-slate-600">
             {freq}Hz
@@ -110,13 +110,13 @@ export function Spectrogram() {
       {/* Canvas — fills the full panel below the header */}
       <canvas
         ref={canvasRef}
-        className="absolute left-7 top-11 h-[calc(100%-3.5rem)] w-[calc(100%-2rem)]"
+        className="absolute left-10 top-16 h-[calc(100%-6rem)] w-[calc(100%-4rem)]"
       />
 
       {/* Top fade */}
-      <div className="pointer-events-none absolute left-7 right-2 top-0 h-11 bg-gradient-to-b from-ink-900 to-transparent" />
+      <div className="pointer-events-none absolute left-10 right-4 top-0 h-16 bg-gradient-to-b from-ink-900 to-transparent" />
       {/* Bottom fade */}
-      <div className="pointer-events-none absolute bottom-0 left-7 right-2 h-6 bg-gradient-to-t from-ink-900 to-transparent" />
+      <div className="pointer-events-none absolute bottom-0 left-10 right-4 h-8 bg-gradient-to-t from-ink-900 to-transparent" />
     </div>
   );
 }

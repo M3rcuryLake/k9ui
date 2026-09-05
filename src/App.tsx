@@ -111,13 +111,13 @@ function Dashboard() {
       <HeaderBar />
       <div className="flex min-h-0 flex-1 gap-4 p-4">
         {/* Main center column — spectrogram + map stacked */}
-        <div className="flex min-w-0 flex-1 flex-col gap-3">
+        <div className="flex min-w-0 flex-1 flex-col gap-3 min-h-0">
           {/* Spectrogram — top 1/3 */}
-          <div className="h-[33%] min-h-0">
+          <div className="flex-1 min-h-[200px]">
             <Spectrogram />
           </div>
-          {/* Map — bottom 2/3 */}
-          <div className="h-[calc(67%-12px)] min-h-0">
+          {/* Map — bottom 2/3, always visible */}
+          <div className="flex-[3] min-h-[200px]">
             <RoverMap />
           </div>
         </div>
