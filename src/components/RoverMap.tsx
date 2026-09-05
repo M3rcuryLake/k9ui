@@ -91,10 +91,13 @@ export function RoverMap() {
   );
   const [locationUnavailable, setLocationUnavailable] = useState(false);
 
+  const mountedRef = useRef(true);
+
   const { telemetry, connectionStatus } = useTelemetry();
 
   // Init map — always renders immediately, never gated on data
   useEffect(() => {
+    if (!mountedRef.current) return;
     if (!containerRef.current || mapRef.current) return;
 
     const initialOrigin = loadCachedOrigin() ?? NEUTRAL_ORIGIN;
@@ -196,14 +199,19 @@ export function RoverMap() {
     trailRef.current = trail;
 
     return () => {
-      map.remove();
-      mapRef.current = null;
+      mountedRef.current = false;
+      if (mapRef.current) mapRef.current.remove();
+      roverMarkerRef.current = null;
+      moveCircleRef.current = null;
+      breathCircleRef.current = null;
+      trailRef.current = null;
       fallbackGrid = null;
     };
   }, []);
 
   // When telemetry arrives with gps_origin, use it as the authoritative origin
   useEffect(() => {
+    if (!mountedRef.current) return;
     if (!telemetry?.gps_origin) return;
     const go = telemetry.gps_origin;
     cacheOrigin(go);
@@ -212,6 +220,7 @@ export function RoverMap() {
 
   // Re-center map when origin changes (but not at neutral 0,0 unless that's all we have)
   useEffect(() => {
+    if (!mountedRef.current) return;
     if (!mapRef.current) return;
     mapRef.current.setView([origin.latitude, origin.longitude], MAP_ZOOM, {
       animate: true,
@@ -220,6 +229,7 @@ export function RoverMap() {
 
   // Update from telemetry
   useEffect(() => {
+    if (!mountedRef.current) return;
     if (!telemetry || !mapRef.current || !roverMarkerRef.current) return;
     if (telemetry.pose == null) return;
 
@@ -227,7 +237,6 @@ export function RoverMap() {
       { x: telemetry.pose.x ?? 0, y: telemetry.pose.y ?? 0 },
       origin
     );
-    const map = mapRef.current;
     const rover = roverMarkerRef.current;
     const moveCircle = moveCircleRef.current;
     const breathCircle = breathCircleRef.current;
@@ -275,6 +284,7 @@ export function RoverMap() {
 
   // Radar sweep
   useEffect(() => {
+    if (!mountedRef.current) return;
     const map = mapRef.current;
     if (!map) return;
 
@@ -314,7 +324,7 @@ export function RoverMap() {
       sweepMarker.remove();
       sweepMarkerRef.current = null;
     };
-  }, []);
+  }, [origin.latitude, origin.longitude]);
 
   const atNeutralOrigin = origin.latitude === 0 && origin.longitude === 0;
 

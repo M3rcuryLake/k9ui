@@ -87,6 +87,11 @@ export function TelemetryProvider({ children }: { children: ReactNode }) {
           return;
         }
 
+        if (!parsed || typeof parsed !== 'object') {
+          console.warn('Dropped invalid telemetry frame');
+          return;
+        }
+
         if (!hasReceivedDataRef.current) {
           hasReceivedDataRef.current = true;
           startRef.current = Date.now();

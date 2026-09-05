@@ -86,7 +86,7 @@ function HeaderBar() {
         <div className="flex items-center gap-2">
           <Activity className="h-3 w-3 text-cyan-400" />
           <span className="font-mono text-[10px] uppercase tracking-wider text-slate-400">
-            Breath: {telemetry?.breath.rate_bpm?.toFixed(1) ?? '—'} BPM
+            Breath: {telemetry?.breath?.rate_bpm != null ? telemetry.breath.rate_bpm.toFixed(1) : '—'} BPM
           </span>
         </div>
         <div className="flex items-center gap-2">

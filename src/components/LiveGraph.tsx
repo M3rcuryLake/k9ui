@@ -232,6 +232,11 @@ export function MotionGraph() {
   const { telemetry, connectionStatus } = useTelemetry();
   const data = useRollingWindow('motion', HISTORY_LEN);
   const awaiting = connectionStatus === 'awaiting' && !telemetry;
+
+  const mvsConfidence = telemetry?.mvs?.confidence ?? null;
+  const mvsVariance = telemetry?.mvs?.variance ?? null;
+  const mvsThreshold = telemetry?.mvs?.threshold ?? null;
+
   return (
     <LiveGraph
       data={data}
@@ -241,11 +246,11 @@ export function MotionGraph() {
       fillColor="rgba(34, 211, 238, 0.12)"
       label="Motion Confidence"
       unit="%"
-      currentValue={telemetry?.mvs.confidence ?? null}
-      alarm={Boolean(telemetry && telemetry.mvs.confidence > 50)}
+      currentValue={mvsConfidence ?? null}
+      alarm={Boolean(mvsConfidence != null && mvsConfidence > 50)}
       secondaryValue={{
         label: 'Var',
-        value: `${telemetry?.mvs.variance?.toFixed(2) ?? '—'} / ${telemetry?.mvs.threshold?.toFixed(2) ?? '—'}`,
+        value: `${mvsVariance !== null ? mvsVariance.toFixed(2) : '—'} / ${mvsThreshold !== null ? mvsThreshold.toFixed(2) : '—'}`,
       }}
     />
   );
@@ -255,6 +260,11 @@ export function BreathingGraph() {
   const { telemetry, connectionStatus } = useTelemetry();
   const data = useRollingWindow('breathing', HISTORY_LEN);
   const awaiting = connectionStatus === 'awaiting' && !telemetry;
+
+  const breathConfidence = telemetry?.breath?.confidence ?? null;
+  const breathRate = telemetry?.breath?.rate_bpm ?? null;
+  const breathSnr = telemetry?.breath?.snr ?? null;
+
   return (
     <LiveGraph
       data={data}
@@ -264,11 +274,11 @@ export function BreathingGraph() {
       fillColor="rgba(251, 191, 36, 0.12)"
       label="Breathing Confidence"
       unit="%"
-      currentValue={telemetry?.breath.confidence ?? null}
-      alarm={Boolean(telemetry && telemetry.breath.confidence > 50)}
+      currentValue={breathConfidence ?? null}
+      alarm={Boolean(breathConfidence != null && breathConfidence > 50)}
       secondaryValue={{
         label: 'Rate',
-        value: `${telemetry?.breath.rate_bpm?.toFixed(1) ?? '—'} BPM · SNR ${telemetry?.breath.snr?.toFixed(1) ?? '—'}`,
+        value: `${breathRate !== null ? breathRate.toFixed(1) : '—'} BPM · SNR ${breathSnr !== null ? breathSnr.toFixed(1) : '—'}`,
       }}
     />
   );
@@ -281,6 +291,10 @@ export function AiGraph() {
   const events = data
     .filter((d) => d.value !== null)
     .map((d) => ({ t: d.t, label: 'event' }));
+
+  const mlScore = telemetry?.ml?.score ?? null;
+  const mlDetection = telemetry?.ml?.detection ?? 'scanning…';
+
   return (
     <LiveGraph
       data={data}
@@ -289,10 +303,10 @@ export function AiGraph() {
       fillColor="rgba(167, 139, 250, 0.12)"
       label="AI / ML Score"
       unit="%"
-      currentValue={telemetry?.ml.score ?? null}
+      currentValue={mlScore ?? null}
       secondaryValue={{
         label: 'Detection',
-        value: telemetry?.ml.detection ?? 'scanning…',
+        value: mlDetection,
       }}
       eventMarkers={events}
       awaiting={awaiting}

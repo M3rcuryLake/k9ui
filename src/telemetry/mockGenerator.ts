@@ -25,7 +25,7 @@ const M_PER_DEG_LNG = 111320 * Math.cos((GPS_ORIGIN.latitude * Math.PI) / 180);
 
 // ── Internal state ──────────────────────────────────────────
 let seq = 10000;
-let startTime = Date.now();
+const startTime = Date.now();
 
 // Rover path simulation
 let poseX = 0;
@@ -243,23 +243,26 @@ export function createHistoryTracker() {
   const history: TelemetryHistory = prefillHistory();
 
   function update(t: Telemetry): TelemetryHistory {
+    const mvs = t.mvs ?? { state: 'idle' as const, variance: 0, threshold: 5.22, confidence: 0 };
+    const breath = t.breath ?? { rate_bpm: 0, snr: 0, confidence: 0 };
+    const ml = t.ml ?? { ready: true, score: null, detection: null, enabled: true };
     const now = Date.now();
 
     history.motion.push({
       t: now,
-      value: t.mvs.confidence,
-      variance: t.mvs.variance,
-      threshold: t.mvs.threshold,
+      value: mvs.confidence,
+      variance: mvs.variance,
+      threshold: mvs.threshold,
     });
     history.breathing.push({
       t: now,
-      value: t.breath.confidence,
-      rate_bpm: t.breath.rate_bpm,
+      value: breath.confidence,
+      rate_bpm: breath.rate_bpm,
     });
     history.ai.push({
       t: now,
-      value: t.ml.score ?? null,
-      detection: t.ml.detection,
+      value: ml.score ?? null,
+      detection: ml.detection,
     });
 
     history.spectrogram.push(t.csi_spectrogram_row);
