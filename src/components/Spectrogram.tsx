@@ -49,6 +49,7 @@ export function Spectrogram() {
 
     const dpr = window.devicePixelRatio || 1;
     const rect = canvas.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return;
     canvas.width = rect.width * dpr;
     canvas.height = rect.height * dpr;
     ctx.scale(dpr, dpr);
@@ -60,42 +61,25 @@ export function Spectrogram() {
     const cols = spectrogram.length;
     if (cols === 0) return;
 
-    const colWidth = rect.width / SPECTROGRAM_COLS;
+    // Stretch columns across the full width regardless of how many we have
+    const colWidth = rect.width / cols;
     const rowHeight = rect.height / SPECTRUM_BINS;
 
     // Draw waterfall — newest on right, scrolling left
-    const startCol = Math.max(0, cols - SPECTROGRAM_COLS);
-    for (let c = startCol; c < cols; c++) {
+    for (let c = 0; c < cols; c++) {
       const row = spectrogram[c];
-      const xPos = (c - startCol) * colWidth;
+      const xPos = c * colWidth;
       for (let r = 0; r < SPECTRUM_BINS; r++) {
         const v = row[r] || 0;
         const [cr, cg, cb] = heatColor(v);
         ctx.fillStyle = `rgb(${cr},${cg},${cb})`;
         const yPos = rect.height - (r + 1) * rowHeight;
-        ctx.fillRect(xPos, yPos, colWidth + 0.5, rowHeight + 0.5);
+        ctx.fillRect(xPos, yPos, colWidth + 1, rowHeight + 1);
       }
     }
-
-    // Glow overlay on bright regions
-    ctx.globalCompositeOperation = 'screen';
-    for (let c = startCol; c < cols; c++) {
-      const row = spectrogram[c];
-      const xPos = (c - startCol) * colWidth;
-      for (let r = 0; r < SPECTRUM_BINS; r++) {
-        const v = row[r] || 0;
-        if (v > 0.45) {
-          const [cr, cg, cb] = heatColor(v);
-          ctx.fillStyle = `rgba(${cr},${cg},${cb},0.25)`;
-          const yPos = rect.height - (r + 1) * rowHeight;
-          ctx.fillRect(xPos - 1, yPos - 1, colWidth + 2, rowHeight + 2);
-        }
-      }
-    }
-    ctx.globalCompositeOperation = 'source-over';
 
     // Horizontal grid lines — 5 evenly spaced across the chart
-    ctx.strokeStyle = 'rgba(34, 211, 238, 0.05)';
+    ctx.strokeStyle = 'rgba(34, 211, 238, 0.06)';
     ctx.lineWidth = 1;
     for (let i = 1; i < 5; i++) {
       const y = (rect.height / 5) * i;
@@ -121,7 +105,7 @@ export function Spectrogram() {
   return (
     <div className="relative h-full w-full overflow-hidden rounded-xl border border-ink-500/40 bg-ink-900">
       {/* Header */}
-      <div className="absolute left-0 right-0 top-0 z-10 flex items-start justify-between px-5 py-4">
+      <div className="absolute left-0 right-0 top-0 z-10 flex items-start justify-between px-4 py-3">
         <div>
           <h2 className="text-sm font-semibold tracking-wide text-slate-200">
             Live CSI Spectrogram
@@ -141,7 +125,7 @@ export function Spectrogram() {
       </div>
 
       {/* Y-axis labels */}
-      <div className="absolute left-2 top-14 z-10 flex h-[calc(100%-4.5rem)] flex-col justify-between py-1">
+      <div className="absolute left-1 top-11 z-10 flex h-[calc(100%-3.5rem)] flex-col justify-between py-1">
         {FREQ_LABELS.map((freq) => (
           <span key={freq} className="font-mono text-[9px] text-slate-600">
             {freq}Hz
@@ -149,16 +133,16 @@ export function Spectrogram() {
         ))}
       </div>
 
-      {/* Canvas */}
+      {/* Canvas — fills the full panel below the header */}
       <canvas
         ref={canvasRef}
-        className="absolute left-8 top-14 h-[calc(100%-4.5rem)] w-[calc(100%-2.5rem)]"
+        className="absolute left-7 top-11 h-[calc(100%-3.5rem)] w-[calc(100%-2rem)]"
       />
 
       {/* Top fade */}
-      <div className="pointer-events-none absolute left-8 right-2 top-0 h-14 bg-gradient-to-b from-ink-900 to-transparent" />
+      <div className="pointer-events-none absolute left-7 right-2 top-0 h-11 bg-gradient-to-b from-ink-900 to-transparent" />
       {/* Bottom fade */}
-      <div className="pointer-events-none absolute bottom-0 left-8 right-2 h-8 bg-gradient-to-t from-ink-900 to-transparent" />
+      <div className="pointer-events-none absolute bottom-0 left-7 right-2 h-6 bg-gradient-to-t from-ink-900 to-transparent" />
     </div>
   );
 }

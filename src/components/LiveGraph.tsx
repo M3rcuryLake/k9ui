@@ -8,7 +8,6 @@ interface GraphProps {
   data: { t: number; value: number | null }[];
   threshold?: number;
   color: string;
-  glowColor: string;
   fillColor: string;
   label: string;
   unit: string;
@@ -24,7 +23,6 @@ function LiveGraph({
   data,
   threshold,
   color,
-  glowColor,
   fillColor,
   label,
   unit,
@@ -36,8 +34,7 @@ function LiveGraph({
   awaiting = false,
 }: GraphProps) {
   const activeColor = alarm ? '#fb7185' : color;
-  const activeGlow = alarm ? 'rgba(248, 113, 113, 0.52)' : glowColor;
-  const activeFill = alarm ? 'rgba(248, 113, 113, 0.16)' : fillColor;
+  const activeFill = alarm ? 'rgba(248, 113, 113, 0.12)' : fillColor;
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -48,27 +45,23 @@ function LiveGraph({
 
     const dpr = window.devicePixelRatio || 1;
     const rect = canvas.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return;
     canvas.width = rect.width * dpr;
     canvas.height = rect.height * dpr;
     ctx.scale(dpr, dpr);
 
     ctx.clearRect(0, 0, rect.width, rect.height);
 
-    const padL = 8;
-    const padR = 8;
-    const padT = 8;
-    const padB = 8;
+    const padL = 4;
+    const padR = 4;
+    const padT = 4;
+    const padB = 4;
     const w = rect.width - padL - padR;
     const h = rect.height - padT - padB;
 
     if (data.length < 2) return;
 
     const n = data.length;
-
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(0, 0, rect.width, rect.height);
-    ctx.clip();
 
     // Threshold line
     if (threshold !== undefined) {
@@ -85,13 +78,10 @@ function LiveGraph({
 
     // Build path — null values create gaps in the line
     const points = data.map((d, i) => ({
-      x: Math.max(padL, Math.min(padL + w, padL + (i / (n - 1)) * w)),
+      x: padL + (i / (n - 1)) * w,
       y: d.value === null
         ? null
-        : Math.max(
-            padT,
-            Math.min(padT + h, padT + h * (1 - Math.min(Math.max(d.value, 0), max) / max))
-          ),
+        : padT + h * (1 - Math.min(Math.max(d.value, 0), max) / max),
     }));
 
     // Split into contiguous segments (null values create gaps)
@@ -127,23 +117,7 @@ function LiveGraph({
       ctx.fill();
     }
 
-    // Glow stroke (wide, low opacity)
-    for (const seg of segments) {
-      if (seg.length < 2) continue;
-      ctx.beginPath();
-      ctx.moveTo(seg[0].x, seg[0].y);
-      for (let i = 1; i < seg.length; i++) {
-        ctx.lineTo(seg[i].x, seg[i].y);
-      }
-      ctx.strokeStyle = activeGlow;
-      ctx.lineWidth = 4;
-      ctx.shadowBlur = 8;
-      ctx.shadowColor = activeGlow;
-      ctx.stroke();
-    }
-
-    // Main stroke
-    ctx.shadowBlur = 0;
+    // Main stroke — simple, no glow, no shadow
     for (const seg of segments) {
       if (seg.length < 2) continue;
       ctx.beginPath();
@@ -160,18 +134,15 @@ function LiveGraph({
     const lastPoint = points[points.length - 1];
     if (lastPoint && lastPoint.y !== null) {
       ctx.beginPath();
-      ctx.arc(lastPoint.x, lastPoint.y, 3, 0, Math.PI * 2);
+      ctx.arc(lastPoint.x, lastPoint.y, 2.5, 0, Math.PI * 2);
       ctx.fillStyle = activeColor;
-      ctx.shadowBlur = 10;
-      ctx.shadowColor = activeGlow;
       ctx.fill();
-      ctx.shadowBlur = 0;
     }
 
     // Flatline baseline — when awaiting, draw a dim horizontal line at 0
     if (awaiting) {
       const baselineY = padT + h;
-      ctx.strokeStyle = 'rgba(100, 116, 139, 0.3)';
+      ctx.strokeStyle = 'rgba(100, 116, 139, 0.35)';
       ctx.lineWidth = 1.5;
       ctx.beginPath();
       ctx.moveTo(padL, baselineY);
@@ -189,7 +160,7 @@ function LiveGraph({
         if (evt.t < oldest) continue;
         const ratio = (evt.t - oldest) / span;
         const ex = padL + ratio * w;
-        ctx.strokeStyle = 'rgba(239, 68, 68, 0.6)';
+        ctx.strokeStyle = 'rgba(239, 68, 68, 0.5)';
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.moveTo(ex, padT);
@@ -197,9 +168,7 @@ function LiveGraph({
         ctx.stroke();
       }
     }
-
-    ctx.restore();
-  }, [data, threshold, activeColor, activeGlow, activeFill, eventMarkers, max, awaiting]);
+  }, [data, threshold, activeColor, activeFill, eventMarkers, max, awaiting]);
 
   const displayValue =
     typeof currentValue === 'number'
@@ -208,9 +177,9 @@ function LiveGraph({
 
   return (
     <div
-      className={`group relative overflow-hidden rounded-xl border p-5 transition-all duration-300 hover:border-ink-400/40 ${
+      className={`group relative overflow-hidden rounded-xl border p-4 transition-all duration-300 hover:border-ink-400/40 ${
         alarm
-          ? 'border-red-400/50 bg-red-950/20 shadow-[0_0_24px_rgba(248,113,113,0.12)]'
+          ? 'border-red-400/50 bg-red-950/20'
           : 'border-ink-500/30 bg-ink-800/60'
       }`}
     >
@@ -234,7 +203,7 @@ function LiveGraph({
         </div>
         <div className="text-right">
           <span
-            className="font-mono text-3xl font-semibold tabular-nums"
+            className="font-mono text-2xl font-semibold tabular-nums"
             style={{ color: activeColor }}
           >
             {displayValue}
@@ -244,11 +213,10 @@ function LiveGraph({
           </span>
         </div>
       </div>
-      <div className="relative mt-5 h-24 overflow-hidden rounded-md">
+      <div className="relative mt-3 h-20 overflow-hidden rounded-md bg-ink-900/40">
         <canvas
           ref={canvasRef}
           className="absolute inset-0 block h-full w-full"
-          style={{ clipPath: 'inset(0)' }}
         />
         {awaiting && (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
@@ -270,7 +238,6 @@ export function MotionGraph() {
       awaiting={awaiting}
       threshold={50}
       color="#22d3ee"
-      glowColor="rgba(34, 211, 238, 0.4)"
       fillColor="rgba(34, 211, 238, 0.12)"
       label="Motion Confidence"
       unit="%"
@@ -294,7 +261,6 @@ export function BreathingGraph() {
       awaiting={awaiting}
       threshold={50}
       color="#fbbf24"
-      glowColor="rgba(251, 191, 36, 0.4)"
       fillColor="rgba(251, 191, 36, 0.12)"
       label="Breathing Confidence"
       unit="%"
@@ -320,7 +286,6 @@ export function AiGraph() {
       data={data}
       threshold={50}
       color="#a78bfa"
-      glowColor="rgba(167, 139, 250, 0.4)"
       fillColor="rgba(167, 139, 250, 0.12)"
       label="AI / ML Score"
       unit="%"
