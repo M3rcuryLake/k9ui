@@ -1,6 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { useTelemetry } from '@/telemetry/TelemetryProvider';
+import { useRollingWindow } from '@/telemetry/useRollingWindow';
 import { AwaitingSignal } from '@/components/AwaitingSignal';
+import { HISTORY_LEN } from '@/telemetry/mockGenerator';
 
 interface GraphProps {
   data: { t: number; value: number | null }[];
@@ -63,7 +65,6 @@ function LiveGraph({
 
     const n = data.length;
 
-    // Keep glow strokes and event lines inside the chart viewport.
     ctx.save();
     ctx.beginPath();
     ctx.rect(0, 0, rect.width, rect.height);
@@ -167,6 +168,17 @@ function LiveGraph({
       ctx.shadowBlur = 0;
     }
 
+    // Flatline baseline — when awaiting, draw a dim horizontal line at 0
+    if (awaiting) {
+      const baselineY = padT + h;
+      ctx.strokeStyle = 'rgba(100, 116, 139, 0.3)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(padL, baselineY);
+      ctx.lineTo(padL + w, baselineY);
+      ctx.stroke();
+    }
+
     // Event markers
     if (eventMarkers && eventMarkers.length > 0) {
       const now = Date.now();
@@ -187,31 +199,16 @@ function LiveGraph({
     }
 
     ctx.restore();
-  }, [data, threshold, activeColor, activeGlow, activeFill, eventMarkers, max]);
+  }, [data, threshold, activeColor, activeGlow, activeFill, eventMarkers, max, awaiting]);
 
   const displayValue =
     typeof currentValue === 'number'
       ? currentValue.toFixed(1)
       : currentValue ?? '—';
 
-  if (awaiting) {
-    return (
-      <div className="group relative overflow-hidden rounded-xl border border-ink-500/30 bg-ink-800/60 p-4">
-        <div className="flex items-center gap-2">
-          <span className="text-[11px] font-medium uppercase tracking-wider text-slate-400">
-            {label}
-          </span>
-        </div>
-        <div className="mt-4 h-24">
-          <AwaitingSignal />
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div
-      className={`group relative overflow-hidden rounded-xl border p-4 transition-all duration-300 hover:border-ink-400/40 ${
+      className={`group relative overflow-hidden rounded-xl border p-5 transition-all duration-300 hover:border-ink-400/40 ${
         alarm
           ? 'border-red-400/50 bg-red-950/20 shadow-[0_0_24px_rgba(248,113,113,0.12)]'
           : 'border-ink-500/30 bg-ink-800/60'
@@ -247,20 +244,25 @@ function LiveGraph({
           </span>
         </div>
       </div>
-      <div className="relative mt-4 h-24 overflow-hidden rounded-md">
+      <div className="relative mt-5 h-24 overflow-hidden rounded-md">
         <canvas
           ref={canvasRef}
           className="absolute inset-0 block h-full w-full"
           style={{ clipPath: 'inset(0)' }}
         />
+        {awaiting && (
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+            <AwaitingSignal />
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
 export function MotionGraph() {
-  const { history, telemetry, connectionStatus } = useTelemetry();
-  const data = history.motion.map((d) => ({ t: d.t, value: d.value }));
+  const { telemetry, connectionStatus } = useTelemetry();
+  const data = useRollingWindow('motion', HISTORY_LEN);
   const awaiting = connectionStatus === 'awaiting' && !telemetry;
   return (
     <LiveGraph
@@ -283,8 +285,8 @@ export function MotionGraph() {
 }
 
 export function BreathingGraph() {
-  const { history, telemetry, connectionStatus } = useTelemetry();
-  const data = history.breathing.map((d) => ({ t: d.t, value: d.value }));
+  const { telemetry, connectionStatus } = useTelemetry();
+  const data = useRollingWindow('breathing', HISTORY_LEN);
   const awaiting = connectionStatus === 'awaiting' && !telemetry;
   return (
     <LiveGraph
@@ -307,12 +309,12 @@ export function BreathingGraph() {
 }
 
 export function AiGraph() {
-  const { history, telemetry, connectionStatus } = useTelemetry();
-  const data = history.ai.map((d) => ({ t: d.t, value: d.value }));
+  const { telemetry, connectionStatus } = useTelemetry();
+  const data = useRollingWindow('ai', HISTORY_LEN);
   const awaiting = connectionStatus === 'awaiting' && !telemetry;
-  const events = history.ai
-    .filter((d) => d.detection !== null && d.value !== null)
-    .map((d) => ({ t: d.t, label: d.detection! }));
+  const events = data
+    .filter((d) => d.value !== null)
+    .map((d) => ({ t: d.t, label: 'event' }));
   return (
     <LiveGraph
       data={data}

@@ -2,17 +2,38 @@ import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useTelemetry } from '@/telemetry/TelemetryProvider';
-import { poseToLatLng, GPS_ORIGIN } from '@/telemetry/mockGenerator';
+import { poseToLatLng } from '@/telemetry/mockGenerator';
+import type { GpsOrigin } from '@/types/telemetry';
 
-// Meters to degrees
-const M_PER_DEG_LAT = 111320;
-const M_PER_DEG_LNG = 111320 * Math.cos((GPS_ORIGIN.latitude * Math.PI) / 180);
-
-// Zoom level for ~50m view
 const MAP_ZOOM = 18;
+const CACHE_KEY = 'k9mesh:gps-origin';
+const NEUTRAL_ORIGIN: GpsOrigin = { latitude: 0, longitude: 0 };
 
-// Fallback grid layer for offline mode — draws a coordinate grid
-// on a dark background when map tiles can't be fetched.
+function loadCachedOrigin(): GpsOrigin | null {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as GpsOrigin;
+    if (
+      typeof parsed.latitude === 'number' &&
+      typeof parsed.longitude === 'number'
+    ) {
+      return parsed;
+    }
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
+function cacheOrigin(origin: GpsOrigin): void {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify(origin));
+  } catch {
+    // ignore
+  }
+}
+
 function createGridLayer(): L.GridLayer {
   return L.gridLayer({
     tileSize: 256,
@@ -20,7 +41,6 @@ function createGridLayer(): L.GridLayer {
   });
 }
 
-// Rover marker icon (SVG directional puck)
 function createRoverIcon(theta: number, stale: boolean): L.DivIcon {
   const color = stale ? '#64748b' : '#22d3ee';
   const glowColor = stale ? '#475569' : '#22d3ee';
@@ -66,16 +86,22 @@ export function RoverMap() {
   const trailPointsRef = useRef<{ lat: number; lng: number }[]>([]);
   const sweepMarkerRef = useRef<L.Marker | null>(null);
   const [stale, setStale] = useState(false);
-  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [origin, setOrigin] = useState<GpsOrigin>(
+    () => loadCachedOrigin() ?? NEUTRAL_ORIGIN
+  );
+  const [locationUnavailable, setLocationUnavailable] = useState(false);
 
   const { telemetry, connectionStatus } = useTelemetry();
 
-  // Init map
+  // Init map — always renders immediately, never gated on data
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
+    const initialOrigin = loadCachedOrigin() ?? NEUTRAL_ORIGIN;
+    setOrigin(initialOrigin);
+
     const map = L.map(containerRef.current, {
-      center: [GPS_ORIGIN.latitude, GPS_ORIGIN.longitude],
+      center: [initialOrigin.latitude, initialOrigin.longitude],
       zoom: MAP_ZOOM,
       zoomControl: false,
       attributionControl: true,
@@ -87,9 +113,6 @@ export function RoverMap() {
       attribution: '© OpenStreetMap contributors',
     }).addTo(map);
 
-    // Track whether tiles are actually loading — if they all error
-    // (offline mode), swap to a canvas grid overlay so the map still
-    // shows a usable background instead of blank gray.
     let tilesLoaded = 0;
     let tilesErrored = 0;
     let fallbackGrid: L.GridLayer | null = null;
@@ -106,33 +129,37 @@ export function RoverMap() {
       tilesLoaded++;
     });
 
-    if (navigator.geolocation) {
+    // If we're at neutral origin (no cache, no data), try device GPS
+    if (
+      initialOrigin.latitude === 0 &&
+      initialOrigin.longitude === 0 &&
+      navigator.geolocation
+    ) {
       navigator.geolocation.getCurrentPosition(
         (position: GeolocationPosition) => {
-          const location = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
+          const loc: GpsOrigin = {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
           };
-          setUserLocation(location);
-          map.setView([location.lat, location.lng], MAP_ZOOM, { animate: true });
+          cacheOrigin(loc);
+          setOrigin(loc);
+          map.setView([loc.latitude, loc.longitude], MAP_ZOOM, { animate: true });
         },
         () => {
-          // Keep the fixed mock origin when location access is unavailable.
+          setLocationUnavailable(true);
         },
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
       );
     }
 
-    // Rover marker
     const roverIcon = createRoverIcon(0, false);
-    const roverMarker = L.marker([GPS_ORIGIN.latitude, GPS_ORIGIN.longitude], {
+    const roverMarker = L.marker([initialOrigin.latitude, initialOrigin.longitude], {
       icon: roverIcon,
       zIndexOffset: 1000,
     }).addTo(map);
 
-    // Movement circle — 12m radius for visibility in 50m² map
     const moveCircle = L.circle(
-      [GPS_ORIGIN.latitude, GPS_ORIGIN.longitude],
+      [initialOrigin.latitude, initialOrigin.longitude],
       {
         radius: 12,
         color: '#3b82f6',
@@ -143,9 +170,8 @@ export function RoverMap() {
       }
     ).addTo(map);
 
-    // Breathing circle — 8m radius
     const breathCircle = L.circle(
-      [GPS_ORIGIN.latitude, GPS_ORIGIN.longitude],
+      [initialOrigin.latitude, initialOrigin.longitude],
       {
         radius: 8,
         color: '#fbbf24',
@@ -156,7 +182,6 @@ export function RoverMap() {
       }
     ).addTo(map);
 
-    // Trail line
     const trail = L.polyline([], {
       color: '#22d3ee',
       weight: 2,
@@ -177,21 +202,26 @@ export function RoverMap() {
     };
   }, []);
 
-  // Keep the map focused on the browser's current location.
+  // When telemetry arrives with gps_origin, use it as the authoritative origin
   useEffect(() => {
-    if (!userLocation || !mapRef.current) return;
-    mapRef.current.setView([userLocation.lat, userLocation.lng], MAP_ZOOM, {
+    if (!telemetry?.gps_origin) return;
+    const go = telemetry.gps_origin;
+    cacheOrigin(go);
+    setOrigin(go);
+  }, [telemetry?.gps_origin]);
+
+  // Re-center map when origin changes (but not at neutral 0,0 unless that's all we have)
+  useEffect(() => {
+    if (!mapRef.current) return;
+    mapRef.current.setView([origin.latitude, origin.longitude], MAP_ZOOM, {
       animate: true,
     });
-  }, [userLocation]);
+  }, [origin]);
 
   // Update from telemetry
   useEffect(() => {
     if (!telemetry || !mapRef.current || !roverMarkerRef.current) return;
 
-    const origin = userLocation
-      ? { latitude: userLocation.lat, longitude: userLocation.lng }
-      : telemetry.gps_origin;
     const pos = poseToLatLng(telemetry.pose, origin);
     const map = mapRef.current;
     const rover = roverMarkerRef.current;
@@ -199,25 +229,19 @@ export function RoverMap() {
     const breathCircle = breathCircleRef.current;
     const trail = trailRef.current;
 
-    // Stale state — true when telemetry says stale OR connection is offline
     const isOffline = connectionStatus === 'offline';
     setStale(telemetry.stale || isOffline);
 
-    // Update rover icon (rotation + stale)
     rover.setIcon(createRoverIcon(telemetry.pose.theta_deg, telemetry.stale));
-
-    // Smooth move
     rover.setLatLng([pos.lat, pos.lng]);
     sweepMarkerRef.current?.setLatLng([pos.lat, pos.lng]);
 
-    // Trail
     if (!telemetry.stale) {
       trailPointsRef.current.push({ lat: pos.lat, lng: pos.lng });
       if (trailPointsRef.current.length > 200) trailPointsRef.current.shift();
       trail?.setLatLngs(trailPointsRef.current);
     }
 
-    // Movement overlay
     const moveConf = telemetry.mvs.confidence;
     if (moveConf > 50 && moveCircle) {
       const opacity = ((moveConf - 50) / 50) * 0.45;
@@ -231,7 +255,6 @@ export function RoverMap() {
       moveCircle.setStyle({ fillOpacity: 0, opacity: 0 });
     }
 
-    // Breathing overlay
     const breathConf = telemetry.breath.confidence;
     if (breathConf > 50 && breathCircle) {
       const opacity = ((breathConf - 50) / 50) * 0.45;
@@ -244,9 +267,9 @@ export function RoverMap() {
     } else if (breathCircle) {
       breathCircle.setStyle({ fillOpacity: 0, opacity: 0 });
     }
-  }, [telemetry, userLocation, connectionStatus]);
+  }, [telemetry, origin, connectionStatus]);
 
-  // Radar sweep — a marker-based div that stays glued to the rover
+  // Radar sweep
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -275,7 +298,7 @@ export function RoverMap() {
       iconAnchor: [sweepSize / 2, sweepSize / 2],
     });
 
-    const sweepMarker = L.marker([GPS_ORIGIN.latitude, GPS_ORIGIN.longitude], {
+    const sweepMarker = L.marker([origin.latitude, origin.longitude], {
       icon: sweepIcon,
       interactive: false,
       zIndexOffset: 500,
@@ -289,18 +312,20 @@ export function RoverMap() {
     };
   }, []);
 
+  const atNeutralOrigin = origin.latitude === 0 && origin.longitude === 0;
+
   return (
     <div className="relative h-full w-full overflow-hidden rounded-xl border border-ink-500/40 bg-ink-800">
       <div ref={containerRef} className="absolute inset-0 z-0" />
 
       {/* Header overlay */}
-      <div className="pointer-events-none absolute left-0 right-0 top-0 z-[500] flex items-start justify-between px-4 py-3">
+      <div className="pointer-events-none absolute left-0 right-0 top-0 z-[500] flex items-start justify-between px-5 py-4">
         <div>
           <h2 className="text-sm font-medium tracking-wide text-slate-200">
             Rover Position — Live Map
           </h2>
-          <p className="mt-0.5 font-mono text-[10px] text-slate-500">
-            {(userLocation?.lat ?? telemetry?.gps_origin.latitude)?.toFixed(4)}, {(userLocation?.lng ?? telemetry?.gps_origin.longitude)?.toFixed(4)} · 50m × 50m · GPS
+          <p className="mt-1 font-mono text-[10px] text-slate-500">
+            {origin.latitude.toFixed(4)}, {origin.longitude.toFixed(4)} · 50m × 50m · GPS
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -313,14 +338,25 @@ export function RoverMap() {
           <div className="flex items-center gap-1.5 rounded-full border border-cyan-400/20 bg-cyan-500/5 px-2.5 py-1">
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-400" />
             <span className="font-mono text-[10px] text-cyan-300">
-              {telemetry?.pose.x.toFixed(1)}, {telemetry?.pose.y.toFixed(1)}m · {telemetry?.pose.theta_deg.toFixed(0)}°
+              {telemetry
+                ? `${telemetry.pose.x.toFixed(1)}, ${telemetry.pose.y.toFixed(1)}m · ${telemetry.pose.theta_deg.toFixed(0)}°`
+                : 'awaiting pose…'}
             </span>
           </div>
         </div>
       </div>
 
+      {/* Location unavailable hint */}
+      {atNeutralOrigin && locationUnavailable && (
+        <div className="pointer-events-none absolute left-1/2 top-16 z-[500] -translate-x-1/2 rounded-lg border border-amber-500/30 bg-ink-900/80 px-3 py-1.5 backdrop-blur-sm">
+          <span className="font-mono text-[10px] text-amber-300">
+            Location unavailable — showing default view
+          </span>
+        </div>
+      )}
+
       {/* Legend */}
-      <div className="pointer-events-none absolute bottom-3 right-3 z-[500] flex flex-col gap-1.5 rounded-lg border border-ink-500/40 bg-ink-900/80 px-3 py-2 backdrop-blur-sm">
+      <div className="pointer-events-none absolute bottom-4 right-4 z-[500] flex flex-col gap-1.5 rounded-lg border border-ink-500/40 bg-ink-900/80 px-3.5 py-2.5 backdrop-blur-sm">
         <div className="flex items-center gap-2">
           <span className="h-2.5 w-2.5 rounded-full bg-cyan-400 shadow-glow" />
           <span className="font-mono text-[10px] text-slate-400">Rover</span>

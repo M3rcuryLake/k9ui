@@ -29,7 +29,7 @@ export function TelemetryPanel() {
 
   if (isAwaiting) {
     return (
-      <div className="rounded-xl border border-ink-500/30 bg-ink-800/60 p-4">
+      <div className="rounded-xl border border-ink-500/30 bg-ink-800/60 p-5">
         <AwaitingSignal />
       </div>
     );
@@ -42,10 +42,10 @@ export function TelemetryPanel() {
   const seqGap = telemetry.dropped > 0;
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-4">
       {/* Band / Channel */}
-      <div className="rounded-xl border border-ink-500/30 bg-ink-800/60 p-4">
-        <div className="mb-2 flex items-center justify-between">
+      <div className="rounded-xl border border-ink-500/30 bg-ink-800/60 p-5">
+        <div className="mb-3 flex items-center justify-between">
           <span className="text-[11px] font-medium uppercase tracking-wider text-slate-400">
             Band / Channel
           </span>
@@ -70,7 +70,7 @@ export function TelemetryPanel() {
       </div>
 
       {/* Signal */}
-      <div className="rounded-xl border border-ink-500/30 bg-ink-800/60 p-4">
+      <div className="rounded-xl border border-ink-500/30 bg-ink-800/60 p-5">
         <div className="flex items-center justify-between">
           <span className="text-[11px] font-medium uppercase tracking-wider text-slate-400">
             Signal
@@ -82,7 +82,7 @@ export function TelemetryPanel() {
             <span className="font-mono text-[10px] text-slate-500">dBm</span>
           </div>
         </div>
-        <div className="mt-2 flex items-center gap-2">
+        <div className="mt-3 flex items-center gap-2">
           <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-ink-600">
             <div
               className="h-full rounded-full transition-all duration-300"
@@ -103,7 +103,7 @@ export function TelemetryPanel() {
       </div>
 
       {/* Temperature */}
-      <div className="rounded-xl border border-ink-500/30 bg-ink-800/60 p-4">
+      <div className="rounded-xl border border-ink-500/30 bg-ink-800/60 p-5">
         <div className="flex items-center justify-between">
           <span className="text-[11px] font-medium uppercase tracking-wider text-slate-400">
             Temperature
@@ -119,14 +119,14 @@ export function TelemetryPanel() {
           </div>
         </div>
         {tempS.warning && (
-          <p className="mt-1 font-mono text-[9px] text-red-400">
+          <p className="mt-2 font-mono text-[9px] text-red-400">
             {telemetry.temperature_c > 50 ? 'CRITICAL THRESHOLD' : 'ELEVATED'}
           </p>
         )}
       </div>
 
       {/* Uptime */}
-      <div className="rounded-xl border border-ink-500/30 bg-ink-800/60 p-4">
+      <div className="rounded-xl border border-ink-500/30 bg-ink-800/60 p-5">
         <div className="flex items-center justify-between">
           <span className="text-[11px] font-medium uppercase tracking-wider text-slate-400">
             Uptime
@@ -138,13 +138,13 @@ export function TelemetryPanel() {
       </div>
 
       {/* Packet Health */}
-      <div className="rounded-xl border border-ink-500/30 bg-ink-800/60 p-4">
+      <div className="rounded-xl border border-ink-500/30 bg-ink-800/60 p-5">
         <div className="flex items-center justify-between">
           <span className="text-[11px] font-medium uppercase tracking-wider text-slate-400">
             Packet Health
           </span>
         </div>
-        <div className="mt-2 flex items-center justify-between">
+        <div className="mt-3 flex items-center justify-between">
           <div>
             <span className="font-mono text-sm text-slate-300">SEQ</span>
             <span className="ml-1.5 font-mono text-lg font-semibold tabular-nums text-slate-200">

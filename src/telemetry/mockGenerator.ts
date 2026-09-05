@@ -1,7 +1,7 @@
 import type { Telemetry, TelemetryHistory } from '@/types/telemetry';
 
 // ── Constants ──────────────────────────────────────────────
-const SPECTRUM_BINS = 48;
+const SPECTRUM_BINS = 12;
 const HISTORY_LEN = 180; // ~36s at 200ms
 const SPECTROGRAM_COLS = 150;
 const GPS_ORIGIN = { latitude: 12.9716, longitude: 77.5946 };
@@ -93,8 +93,8 @@ function advancePhase(): void {
 function genSpectrumRow(): number[] {
   const row: number[] = [];
   const hasEvent = phase === 'detected' || phase === 'breathing';
-  const eventBand = 20 + Math.floor(Math.random() * 10);
-  const eventWidth = phase === 'breathing' ? 3 : 6;
+  const eventBand = 4 + Math.floor(Math.random() * 4);
+  const eventWidth = phase === 'breathing' ? 1 : 3;
 
   for (let i = 0; i < SPECTRUM_BINS; i++) {
     let v = Math.random() * 0.12;

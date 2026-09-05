@@ -52,7 +52,7 @@ function HeaderBar() {
         : '#64748b';
 
   return (
-    <header className="flex items-center justify-between border-b border-ink-500/30 bg-ink-900/80 px-5 py-2.5 backdrop-blur-sm">
+    <header className="flex items-center justify-between border-b border-ink-500/30 bg-ink-900/80 px-6 py-3 backdrop-blur-sm">
       <div className="flex items-center gap-3">
         <div className="relative">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-500/20 to-blue-600/10 ring-1 ring-cyan-400/30">
@@ -107,22 +107,22 @@ function Dashboard() {
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-ink-900">
       <HeaderBar />
-      <div className="flex min-h-0 flex-1 gap-3 p-3">
+      <div className="flex min-h-0 flex-1 gap-4 p-4">
         {/* Main center column — spectrogram + map stacked */}
-        <div className="flex min-w-0 flex-1 flex-col gap-2">
+        <div className="flex min-w-0 flex-1 flex-col gap-3">
           {/* Spectrogram — top 1/3 */}
           <div className="h-[33%] min-h-0">
             <Spectrogram />
           </div>
           {/* Map — bottom 2/3 */}
-          <div className="h-[calc(67%-4px)] min-h-0">
+          <div className="h-[calc(67%-12px)] min-h-0">
             <RoverMap />
           </div>
         </div>
 
         {/* Right sidebar — graphs + telemetry */}
         <div
-          className={`flex w-96 shrink-0 flex-col gap-3 overflow-y-auto pr-1 transition-[filter,opacity] duration-500 ${
+          className={`flex w-96 shrink-0 flex-col gap-4 overflow-y-auto pr-1 transition-[filter,opacity] duration-500 ${
             isOffline ? 'pointer-events-none opacity-60 saturate-50' : ''
           }`}
         >

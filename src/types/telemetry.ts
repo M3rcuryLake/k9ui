@@ -45,7 +45,7 @@ export interface Telemetry {
   ml: MlData;
   breath: BreathData;
   pose: PoseData;
-  gps_origin: GpsOrigin;
+  gps_origin?: GpsOrigin;
   csi_spectrogram_row: number[];
   stale: boolean;
 }

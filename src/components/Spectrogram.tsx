@@ -30,6 +30,9 @@ function heatColor(v: number): [number, number, number] {
   }
 }
 
+// Y-axis labels for 12 bins across 0–10 Hz
+const FREQ_LABELS = [10, 8, 6, 4, 2, 0];
+
 export function Spectrogram() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { telemetry, history, connectionStatus } = useTelemetry();
@@ -91,7 +94,7 @@ export function Spectrogram() {
     }
     ctx.globalCompositeOperation = 'source-over';
 
-    // Horizontal grid lines
+    // Horizontal grid lines — 5 evenly spaced across the chart
     ctx.strokeStyle = 'rgba(34, 211, 238, 0.05)';
     ctx.lineWidth = 1;
     for (let i = 1; i < 5; i++) {
@@ -118,7 +121,7 @@ export function Spectrogram() {
   return (
     <div className="relative h-full w-full overflow-hidden rounded-xl border border-ink-500/40 bg-ink-900">
       {/* Header */}
-      <div className="absolute left-0 right-0 top-0 z-10 flex items-start justify-between px-4 py-3">
+      <div className="absolute left-0 right-0 top-0 z-10 flex items-start justify-between px-5 py-4">
         <div>
           <h2 className="text-sm font-semibold tracking-wide text-slate-200">
             Live CSI Spectrogram
@@ -138,8 +141,8 @@ export function Spectrogram() {
       </div>
 
       {/* Y-axis labels */}
-      <div className="absolute left-1.5 top-12 z-10 flex h-[calc(100%-3.5rem)] flex-col justify-between py-1">
-        {[10, 8, 6, 4, 2, 0].map((freq) => (
+      <div className="absolute left-2 top-14 z-10 flex h-[calc(100%-4.5rem)] flex-col justify-between py-1">
+        {FREQ_LABELS.map((freq) => (
           <span key={freq} className="font-mono text-[9px] text-slate-600">
             {freq}Hz
           </span>
@@ -149,13 +152,13 @@ export function Spectrogram() {
       {/* Canvas */}
       <canvas
         ref={canvasRef}
-        className="absolute left-7 top-12 h-[calc(100%-3.5rem)] w-[calc(100%-2rem)]"
+        className="absolute left-8 top-14 h-[calc(100%-4.5rem)] w-[calc(100%-2.5rem)]"
       />
 
       {/* Top fade */}
-      <div className="pointer-events-none absolute left-7 right-0 top-0 h-12 bg-gradient-to-b from-ink-900 to-transparent" />
+      <div className="pointer-events-none absolute left-8 right-2 top-0 h-14 bg-gradient-to-b from-ink-900 to-transparent" />
       {/* Bottom fade */}
-      <div className="pointer-events-none absolute bottom-0 left-7 right-0 h-6 bg-gradient-to-t from-ink-900 to-transparent" />
+      <div className="pointer-events-none absolute bottom-0 left-8 right-2 h-8 bg-gradient-to-t from-ink-900 to-transparent" />
     </div>
   );
 }
