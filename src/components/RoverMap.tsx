@@ -255,7 +255,7 @@ export function RoverMap() {
       trail?.setLatLngs(trailPointsRef.current);
     }
 
-    const moveConf = telemetry.mvs.confidence;
+    const moveConf = telemetry.mvs?.confidence ?? 0;
     if (moveConf > 50 && moveCircle) {
       const opacity = ((moveConf - 50) / 50) * 0.45;
       moveCircle.setLatLng([pos.lat, pos.lng]);
@@ -268,7 +268,7 @@ export function RoverMap() {
       moveCircle.setStyle({ fillOpacity: 0, opacity: 0 });
     }
 
-    const breathConf = telemetry.breath.confidence;
+    const breathConf = telemetry.breath?.confidence ?? 0;
     if (breathConf > 50 && breathCircle) {
       const opacity = ((breathConf - 50) / 50) * 0.45;
       breathCircle.setLatLng([pos.lat, pos.lng]);
