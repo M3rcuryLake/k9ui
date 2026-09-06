@@ -3,7 +3,7 @@ import { Spectrogram } from '@/components/Spectrogram';
 import { RoverMap } from '@/components/RoverMap';
 import { MotionGraph, BreathingGraph, AiGraph } from '@/components/LiveGraph';
 import { TelemetryPanel } from '@/components/TelemetryPanel';
-import { Activity, Radio, Cpu, Wifi, WifiOff } from 'lucide-react';
+import { Activity, Radio, Cpu, Wifi, WifiOff, AudioLines } from 'lucide-react';
 
 function ConnectionBadge() {
   const { connectionStatus } = useTelemetry();
@@ -110,11 +110,42 @@ function Dashboard() {
     <div className="flex h-screen flex-col overflow-hidden bg-ink-900">
       <HeaderBar />
       <div className="flex min-h-0 flex-1 gap-4 p-4">
-        {/* Main center column — spectrogram + map stacked */}
+        {/* Main center column — spectrogram row + map stacked */}
         <div className="flex min-w-0 flex-1 flex-col gap-3 min-h-0">
-          {/* Spectrogram — top 1/3 */}
-          <div className="flex-1 min-h-[200px]">
-            <Spectrogram />
+          {/* Top row — spectrogram (left half) + start listening (right half) */}
+          <div className="flex min-h-[200px] flex-1 gap-3">
+            <div className="min-w-0 flex-1">
+              <Spectrogram />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-xl border border-ink-500/40 bg-ink-800">
+                <div className="pointer-events-none absolute left-0 right-0 top-0 z-10 flex items-start justify-between px-5 py-4">
+                  <div>
+                    <h2 className="text-sm font-medium tracking-wide text-slate-200">
+                      Audio Feed
+                    </h2>
+                    <p className="mt-1 font-mono text-[10px] text-slate-500">
+                      Two-way radio · disabled
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="group relative flex flex-col items-center gap-3"
+                >
+                  <span className="flex h-16 w-16 items-center justify-center rounded-full border border-cyan-400/30 bg-cyan-500/10 transition-all duration-300 group-hover:border-cyan-400/60 group-hover:bg-cyan-500/20 group-hover:shadow-glow">
+                    <AudioLines className="h-7 w-7 text-cyan-300 transition-transform duration-300 group-hover:scale-110" />
+                  </span>
+                  <span className="font-mono text-[11px] font-medium uppercase tracking-widest text-cyan-300">
+                    Start Listening
+                  </span>
+                  <span className="font-mono text-[9px] text-slate-500">
+                    Click to monitor audio feed
+                  </span>
+                </button>
+                <div className="pointer-events-none absolute inset-0 z-[450] rounded-xl shadow-inner-glow" />
+              </div>
+            </div>
           </div>
           {/* Map — bottom 2/3, always visible */}
           <div className="flex-[3] min-h-[200px]">
