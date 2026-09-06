@@ -44,8 +44,9 @@ export function TelemetryPanel() {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Band / Channel */}
+      {/* Band / Channel + Signal */}
       <div className="rounded-xl border border-ink-500/30 bg-ink-800/60 p-5">
+        {/* Band / Channel */}
         <div className="mb-3 flex items-center justify-between">
           <span className="text-[11px] font-medium uppercase tracking-wider text-slate-400">
             Band / Channel
@@ -68,10 +69,11 @@ export function TelemetryPanel() {
             </span>
           ))}
         </div>
-      </div>
 
-      {/* Signal */}
-      <div className="rounded-xl border border-ink-500/30 bg-ink-800/60 p-5">
+        {/* Divider */}
+        <div className="my-4 h-px bg-ink-500/20" />
+
+        {/* Signal */}
         <div className="flex items-center justify-between">
           <span className="text-[11px] font-medium uppercase tracking-wider text-slate-400">
             Signal
@@ -103,8 +105,9 @@ export function TelemetryPanel() {
         </div>
       </div>
 
-      {/* Temperature */}
+      {/* Temperature + Uptime + Packet Health */}
       <div className="rounded-xl border border-ink-500/30 bg-ink-800/60 p-5">
+        {/* Temperature */}
         <div className="flex items-center justify-between">
           <span className="text-[11px] font-medium uppercase tracking-wider text-slate-400">
             Temperature
@@ -124,10 +127,11 @@ export function TelemetryPanel() {
             {tempC > 50 ? 'CRITICAL THRESHOLD' : 'ELEVATED'}
           </p>
         )}
-      </div>
 
-      {/* Uptime */}
-      <div className="rounded-xl border border-ink-500/30 bg-ink-800/60 p-5">
+        {/* Divider */}
+        <div className="my-4 h-px bg-ink-500/20" />
+
+        {/* Uptime */}
         <div className="flex items-center justify-between">
           <span className="text-[11px] font-medium uppercase tracking-wider text-slate-400">
             Uptime
@@ -136,10 +140,11 @@ export function TelemetryPanel() {
             {formatUptime(uptime)}
           </span>
         </div>
-      </div>
 
-      {/* Packet Health */}
-      <div className="rounded-xl border border-ink-500/30 bg-ink-800/60 p-5">
+        {/* Divider */}
+        <div className="my-4 h-px bg-ink-500/20" />
+
+        {/* Packet Health */}
         <div className="flex items-center justify-between">
           <span className="text-[11px] font-medium uppercase tracking-wider text-slate-400">
             Packet Health

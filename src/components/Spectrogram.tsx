@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useTelemetry } from '@/telemetry/TelemetryProvider';
-import { SPECTRUM_BINS } from '@/telemetry/mockGenerator';
+import { SPECTRUM_BINS, SPECTROGRAM_COLS } from '@/telemetry/mockGenerator';
 import { AwaitingSignal } from '@/components/AwaitingSignal';
 
 // Y-axis labels for 12 bins across 0–10 Hz
@@ -34,14 +34,16 @@ export function Spectrogram() {
     const cols = spectrogram.length;
     if (cols === 0) return;
 
-    // Stretch columns across the full width regardless of how many we have
-    const colWidth = rect.width / cols;
+    // Fixed column width based on the max capacity so the window
+    // fills from the right and slides left once full.
+    const colWidth = rect.width / SPECTROGRAM_COLS;
     const rowHeight = rect.height / SPECTRUM_BINS;
 
-    // Draw waterfall — newest on right, scrolling left
+    // Draw waterfall — newest on right, anchored to the right edge
+    const startX = rect.width - cols * colWidth;
     for (let c = 0; c < cols; c++) {
       const row = spectrogram[c];
-      const xPos = c * colWidth;
+      const xPos = startX + c * colWidth;
       for (let r = 0; r < SPECTRUM_BINS; r++) {
         const pixel = row[r];
         if (!pixel) continue;
