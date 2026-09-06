@@ -110,8 +110,8 @@ function Dashboard() {
     <div className="flex h-screen flex-col overflow-hidden bg-ink-900">
       <HeaderBar />
       <div className="flex min-h-0 flex-1 gap-4 p-4">
-        {/* Main center column — spectrogram row + map stacked */}
-        <div className="flex min-w-0 flex-1 flex-col gap-3 min-h-0">
+        {/* Main center column — spectrogram row + map stacked (2/3 width) */}
+        <div className="flex min-w-0 flex-[2] flex-col gap-3 min-h-0">
           {/* Top row — spectrogram (left half) + start listening (right half) */}
           <div className="flex min-h-[200px] flex-1 gap-3">
             <div className="min-w-0 flex-1">
@@ -122,10 +122,10 @@ function Dashboard() {
                 <div className="pointer-events-none absolute left-0 right-0 top-0 z-10 flex items-start justify-between px-5 py-4">
                   <div>
                     <h2 className="text-sm font-medium tracking-wide text-slate-200">
-                      Audio Feed
+                      Signal Listener
                     </h2>
                     <p className="mt-1 font-mono text-[10px] text-slate-500">
-                      Two-way radio · disabled
+                      WebSocket server · stopped
                     </p>
                   </div>
                 </div>
@@ -140,7 +140,7 @@ function Dashboard() {
                     Start Listening
                   </span>
                   <span className="font-mono text-[9px] text-slate-500">
-                    Click to monitor audio feed
+                    Click to start the WebSocket server
                   </span>
                 </button>
                 <div className="pointer-events-none absolute inset-0 z-[450] rounded-xl shadow-inner-glow" />
@@ -153,9 +153,9 @@ function Dashboard() {
           </div>
         </div>
 
-        {/* Right sidebar — graphs + telemetry */}
+        {/* Right sidebar — graphs + telemetry (1/3 width) */}
         <div
-          className={`flex w-96 shrink-0 flex-col gap-4 overflow-y-auto pr-1 transition-[filter,opacity] duration-500 ${
+          className={`flex min-w-0 flex-1 flex-col gap-4 overflow-y-auto pr-1 transition-[filter,opacity] duration-500 ${
             isOffline ? 'pointer-events-none opacity-60 saturate-50' : ''
           }`}
         >
