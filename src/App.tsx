@@ -118,7 +118,7 @@ function Dashboard() {
               <Spectrogram />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-xl border border-ink-500/40 bg-ink-800">
+              <div className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-xl border border-ink-500/40 bg-ink-800 px-4 py-3">
                 <div className="pointer-events-none absolute left-0 right-0 top-0 z-10 flex items-start justify-between px-5 py-4">
                   <div>
                     <h2 className="text-sm font-medium tracking-wide text-slate-200">
