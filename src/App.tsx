@@ -3,7 +3,8 @@ import { Spectrogram } from '@/components/Spectrogram';
 import { RoverMap } from '@/components/RoverMap';
 import { MotionGraph, BreathingGraph, AiGraph } from '@/components/LiveGraph';
 import { TelemetryPanel } from '@/components/TelemetryPanel';
-import { Activity, Radio, Cpu, Wifi, WifiOff, AudioLines } from 'lucide-react';
+import { SignalListener } from '@/components/SignalListener';
+import { Activity, Radio, Cpu, Wifi, WifiOff } from 'lucide-react';
 
 function ConnectionBadge() {
   const { connectionStatus } = useTelemetry();
@@ -118,33 +119,7 @@ function Dashboard() {
               <Spectrogram />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-xl border border-ink-500/40 bg-ink-800 px-4 py-3">
-                <div className="pointer-events-none absolute left-0 right-0 top-0 z-10 flex items-start justify-between px-5 py-4">
-                  <div>
-                    <h2 className="text-sm font-medium tracking-wide text-slate-200">
-                      Signal Listener
-                    </h2>
-                    <p className="mt-1 font-mono text-[10px] text-slate-500">
-                      WebSocket server · stopped
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  className="group relative flex flex-col items-center gap-3"
-                >
-                  <span className="flex h-16 w-16 items-center justify-center rounded-full border border-cyan-400/30 bg-cyan-500/10 transition-all duration-300 group-hover:border-cyan-400/60 group-hover:bg-cyan-500/20 group-hover:shadow-glow">
-                    <AudioLines className="h-7 w-7 text-cyan-300 transition-transform duration-300 group-hover:scale-110" />
-                  </span>
-                  <span className="font-mono text-[11px] font-medium uppercase tracking-widest text-cyan-300">
-                    Start Listening
-                  </span>
-                  <span className="font-mono text-[9px] text-slate-500">
-                    Click to start the WebSocket server
-                  </span>
-                </button>
-                <div className="pointer-events-none absolute inset-0 z-[450] rounded-xl shadow-inner-glow" />
-              </div>
+              <SignalListener />
             </div>
           </div>
           {/* Map — bottom 2/3, always visible */}
