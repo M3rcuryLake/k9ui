@@ -1,99 +1,109 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-export type ProcessStatus = 'stopped' | 'starting' | 'running' | 'stopping' | 'error';
+export type ProcessStatus = 'idle' | 'starting' | 'running' | 'stopping' | 'error';
 
-interface StartOptions {
-  interface?: string;
+export interface StartParams {
+  interface: string;
   calibrationSeconds?: number;
-  skipCalibration?: boolean;
+  skipCalibration: boolean;
 }
 
-const BRIDGE_URL = 'http://127.0.0.1:3001';
+const BRIDGE_URL =
+  (import.meta.env.VITE_BRIDGE_URL as string | undefined) ?? '';
+
+async function fetchJSON(url: string, options?: RequestInit) {
+  const res = await fetch(url, {
+    ...options,
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+  });
+  return res.json();
+}
+
+function bridgeBase(): string {
+  if (BRIDGE_URL) return BRIDGE_URL.replace(/\/$/, '');
+  return '';
+}
 
 export function useProcessControl() {
-  const [status, setStatus] = useState<ProcessStatus>('stopped');
+  const [status, setStatus] = useState<ProcessStatus>('idle');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [pid, setPid] = useState<number | null>(null);
   const mountedRef = useRef(true);
+
+  const base = bridgeBase();
+
+  const checkStatus = useCallback(async () => {
+    if (!mountedRef.current) return;
+    try {
+      const data = await fetchJSON(`${base}/api/status`);
+      if (!mountedRef.current) return;
+      if (data.running) {
+        setStatus('running');
+        setPid(data.pid ?? null);
+      } else if (data.error && status !== 'starting' && status !== 'stopping') {
+        setStatus('error');
+        setErrorMsg(data.error);
+      } else if (status !== 'starting' && status !== 'stopping') {
+        setStatus('idle');
+        setPid(null);
+      }
+    } catch {
+      // Bridge not reachable — leave current status
+    }
+  }, [base, status]);
 
   useEffect(() => {
     mountedRef.current = true;
-    let active = true;
-
-    async function pollStatus() {
-      if (!active) return;
-      try {
-        const res = await fetch(`${BRIDGE_URL}/api/status`);
-        if (!res.ok) return;
-        const data = await res.json();
-        if (!active || !mountedRef.current) return;
-        if (data.status) {
-          setStatus(data.status as ProcessStatus);
-        }
-        if (data.error) {
-          setErrorMsg(data.error);
-        }
-      } catch {
-        // Bridge not reachable — leave status as-is
-      }
-    }
-
-    const interval = setInterval(pollStatus, 3000);
+    checkStatus();
+    const interval = setInterval(checkStatus, 3000);
     return () => {
-      active = false;
       mountedRef.current = false;
       clearInterval(interval);
     };
-  }, []);
+  }, [checkStatus]);
 
-  const start = useCallback(async (opts?: StartOptions) => {
-    setStatus('starting');
-    setErrorMsg(null);
-    try {
-      const res = await fetch(`${BRIDGE_URL}/api/start`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(opts || {}),
-      });
-      const data = await res.json();
-      if (!mountedRef.current) return;
-      if (data.ok) {
-        setStatus(data.status || 'running');
-      } else {
+  const start = useCallback(
+    async (params: StartParams) => {
+      setStatus('starting');
+      setErrorMsg(null);
+      try {
+        const data = await fetchJSON(`${base}/api/start`, {
+          method: 'POST',
+          body: JSON.stringify(params),
+        });
+        if (data.error) {
+          setStatus('error');
+          setErrorMsg(data.error);
+          return false;
+        }
+        setStatus('running');
+        setPid(data.pid ?? null);
+        return true;
+      } catch (err) {
         setStatus('error');
-        setErrorMsg(data.error || 'Failed to start');
+        setErrorMsg(
+          'Cannot reach bridge server. Is it running? (npm run bridge)'
+        );
+        return false;
       }
-    } catch {
-      if (!mountedRef.current) return;
-      setStatus('error');
-      setErrorMsg(
-        'Cannot reach the bridge server. Make sure it is running: npm run bridge'
-      );
-    }
-  }, []);
+    },
+    [base]
+  );
 
   const stop = useCallback(async () => {
     setStatus('stopping');
+    setErrorMsg(null);
     try {
-      const res = await fetch(`${BRIDGE_URL}/api/stop`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      });
-      const data = await res.json();
-      if (!mountedRef.current) return;
-      if (data.ok) {
-        setStatus(data.status || 'stopped');
-      } else {
-        setStatus('error');
-        setErrorMsg(data.error || 'Failed to stop');
-      }
+      await fetchJSON(`${base}/api/stop`, { method: 'POST' });
+      setStatus('idle');
+      setPid(null);
+      return true;
     } catch {
-      if (!mountedRef.current) return;
       setStatus('error');
-      setErrorMsg(
-        'Cannot reach the bridge server. Make sure it is running: npm run bridge'
-      );
+      setErrorMsg('Cannot reach bridge server. Is it running? (npm run bridge)');
+      return false;
     }
-  }, []);
+  }, [base]);
 
-  return { status, errorMsg, start, stop };
+  return { status, errorMsg, pid, start, stop };
 }

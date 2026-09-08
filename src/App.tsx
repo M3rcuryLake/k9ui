@@ -3,8 +3,8 @@ import { Spectrogram } from '@/components/Spectrogram';
 import { RoverMap } from '@/components/RoverMap';
 import { MotionGraph, BreathingGraph, AiGraph } from '@/components/LiveGraph';
 import { TelemetryPanel } from '@/components/TelemetryPanel';
-import { SignalListener } from '@/components/SignalListener';
 import { Activity, Radio, Cpu, Wifi, WifiOff } from 'lucide-react';
+import { SignalListener } from '@/components/SignalListener';
 
 function ConnectionBadge() {
   const { connectionStatus } = useTelemetry();
